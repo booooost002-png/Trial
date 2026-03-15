@@ -140,9 +140,18 @@
   </div>
 
   <script>
+    // 1. ADDED 'keywords' ARRAY TO EACH QUESTION
     const quizData = [
-      { q: "What is a figure of speech comparing two things using 'like' or 'as'?", a: "Simile" },
-      { q: "Name one famous poem by Robert Frost.", a: "The Road Not Taken" }
+      { 
+        q: "What is a figure of speech comparing two things using 'like' or 'as'?", 
+        a: "Simile", 
+        keywords: ["simile"] 
+      },
+      { 
+        q: "Name one famous poem by Robert Frost.", 
+        a: "The Road Not Taken", 
+        keywords: ["road", "not", "taken"] // Even if they say "It's road not taken", they get it right
+      }
     ];
 
     let currentIndex = 0;
@@ -197,12 +206,23 @@
 
       recognition.onresult = (event) => {
         const userSpeech = event.results[0][0].transcript.toLowerCase();
-        const correctAnswer = quizData[currentIndex].a.toLowerCase();
+        const currentQuestion = quizData[currentIndex];
         
         document.getElementById('transcript').textContent = `Spoken: "${userSpeech}"`;
 
-        // Check if correct keywords exist in the speech
-        if (userSpeech.includes(correctAnswer) || correctAnswer.includes(userSpeech)) {
+        // 2. UPDATED LOGIC TO CHECK IF ALL KEYWORDS EXIST IN THE SPOKEN PHRASE
+        let isCorrect = false;
+        
+        if (currentQuestion.keywords) {
+          // If keywords exist, check that EVERY keyword is somewhere in their spoken answer
+          isCorrect = currentQuestion.keywords.every(keyword => userSpeech.includes(keyword.toLowerCase()));
+        } else {
+          // Fallback if no keywords are defined (uses your original method)
+          const exactAnswer = currentQuestion.a.toLowerCase();
+          isCorrect = userSpeech.includes(exactAnswer) || exactAnswer.includes(userSpeech);
+        }
+
+        if (isCorrect) {
           document.getElementById('result-feedback').textContent = "Correct! ✅";
           document.getElementById('result-feedback').className = "correct";
           score++;
