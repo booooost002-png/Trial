@@ -171,10 +171,12 @@ const db = getFirestore(app);
 
 const validTeachers=["01","02","03"];
 
+// Buttons
 const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const printBtn = document.getElementById("printBtn");
 
+// Event listeners
 loginBtn.addEventListener("click", teacherLogin);
 logoutBtn.addEventListener("click", logoutTeacher);
 printBtn.addEventListener("click", () => window.print());
