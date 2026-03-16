@@ -172,6 +172,8 @@ th {
 
   const validTeachers = ["01", "02", "03"];
 
+  let currentTeacherId = null;
+
   async function teacherLogin() {
     const id = document.getElementById("teacherID").value.trim();
     const errorEl = document.getElementById("loginError");
@@ -183,6 +185,7 @@ th {
       return;
     }
 
+    currentTeacherId = id;
     document.getElementById("teacher-login").classList.add("hidden");
     document.getElementById("teacher-dashboard").classList.remove("hidden");
     await loadTeacher();
@@ -213,14 +216,26 @@ th {
       // Sort by score highest to lowest
       allResults.sort((a, b) => b.score - a.score);
 
+      // Filter results based on teacher ID
+      let filteredResults = allResults.filter(r => {
+        let studentNum = parseInt(r.id) || 0;
+        if (currentTeacherId === "01") {
+          return studentNum >= 1 && studentNum <= 30;
+        } else if (currentTeacherId === "02") {
+          return studentNum >= 31 && studentNum <= 60;
+        } else {
+          return true; // For other teachers, show all
+        }
+      });
+
       body.innerHTML = ""; // Clear loading message
 
-      if (allResults.length === 0) {
-        body.innerHTML = "<tr><td colspan='6'>No results found in database.</td></tr>";
+      if (filteredResults.length === 0) {
+        body.innerHTML = "<tr><td colspan='6'>No results found for your assigned students.</td></tr>";
         return;
       }
 
-      allResults.forEach((r) => {
+      filteredResults.forEach((r) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${r.id}</td>
