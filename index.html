@@ -5,7 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Voice-Activated Literacy Assessment</title>
 <style>
-:root { --primary: #2563eb; --success: #22c55e; --danger: #ef4444; --bg: #f8fafc; }
+:root {
+  --primary: #2563eb;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --bg: #f8fafc;
+}
 body { font-family: 'Segoe UI', Roboto, Helvetica, Arial; text-align: center; padding: 20px; background-color: var(--bg); color: #1e293b; }
 #quiz-card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); display: inline-block; max-width: 800px; width: 100%; margin-top: 20px; }
 .input-group { margin-bottom: 20px; text-align: left; max-width: 400px; margin-left: auto; margin-right: auto; }
@@ -90,13 +95,54 @@ th { background-color: #f1f5f9; color: #475569; font-weight: 700; }
       <button class="btn" onclick="backToQuizMenu()" style="background: #64748b; color: white;">Back to Quiz Menu</button>
     </div>
   </div>
+
+  <!-- Ranking -->
+  <div id="ranking-section" class="hidden">
+    <h2>🏆 Assessment Results</h2>
+    <div class="table-container">
+      <table id="rankingTable">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Student ID</th>
+            <th>Grade & Section</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody id="rankingBody"></tbody>
+      </table>
+    </div>
+    <div style="margin-top: 30px;" class="no-print">
+      <button class="btn" onclick="window.print()" style="background: #64748b; color: white;">🖨️ Print Results</button>
+      <button class="btn btn-primary" onclick="resetForNewUser()" style="margin-left: 10px;">Next Student</button>
+    </div>
+  </div>
+
+  <!-- Books -->
+  <div id="books-section" class="hidden">
+    <h2>📚 Available Books</h2>
+    <p>Click on a book to download or view the PDF.</p>
+    <div style="text-align: left; max-width: 600px; margin: 0 auto;">
+      <ul style="list-style: none; padding: 0;">
+        <li style="margin-bottom: 15px;">
+          <a href="https://example.com/book1.pdf" target="_blank" style="text-decoration: none; color: var(--primary); font-weight: 600;">The Great Gatsby</a>
+        </li>
+        <li style="margin-bottom: 15px;">
+          <a href="https://example.com/book2.pdf" target="_blank" style="text-decoration: none; color: var(--primary); font-weight: 600;">To Kill a Mockingbird</a>
+        </li>
+      </ul>
+    </div>
+    <div style="margin-top: 30px;" class="no-print">
+      <button class="btn btn-primary" onclick="backToDashboard()">Back to Dashboard</button>
+    </div>
+  </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js";
 import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
 
-// 🔹 Firebase config
+// 🔹 Replace with your Firebase configuration
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -109,18 +155,33 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Quiz setup (same as before)
+// Quiz questions
 const quizzes = [
-  { name: "Quiz 1", password: "quiz1", questions: [{q:"What is a figure of speech comparing two things using 'like' or 'as'?", a:"Simile", keywords:["simile"]}, {q:"Name one famous poem by Robert Frost.", a:"The Road Not Taken", keywords:["road","not","taken"]}]},
-  { name: "Quiz 2", password: "quiz2", questions: [{q:"What is the capital of France?", a:"Paris", keywords:["paris"]}, {q:"What is 2 + 2?", a:"4", keywords:["four","4"]}]},
-  { name: "Quiz 3", password: "quiz3", questions: [{q:"Who wrote Romeo and Juliet?", a:"Shakespeare", keywords:["shakespeare"]}, {q:"What is the largest planet?", a:"Jupiter", keywords:["jupiter"]}]}
+  { name: "Quiz 1", password: "quiz1", questions: [
+      {q:"What is a figure of speech comparing two things using 'like' or 'as'?", a:"Simile", keywords:["simile"]},
+      {q:"Name one famous poem by Robert Frost.", a:"The Road Not Taken", keywords:["road","not","taken"]}
+  ] },
+  { name: "Quiz 2", password: "quiz2", questions: [
+      {q:"What is the capital of France?", a:"Paris", keywords:["paris"]},
+      {q:"What is 2 + 2?", a:"4", keywords:["four","4"]}
+  ] },
+  { name: "Quiz 3", password: "quiz3", questions: [
+      {q:"Who wrote Romeo and Juliet?", a:"Shakespeare", keywords:["shakespeare"]},
+      {q:"What is the largest planet?", a:"Jupiter", keywords:["jupiter"]}
+  ] }
 ];
 
 let currentQuiz = null;
 let currentIndex = 0;
 let score = 0;
-let attempts = 0;
+let attempts = 0;  // track attempts
+let allResults = [];
 
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+if (recognition) recognition.lang='en-US';
+
+// 🔹 Functions
 function startQuiz() {
   const studentID = document.getElementById('studentID').value.trim();
   const grade = document.getElementById('gradeLevel').value.trim();
@@ -146,29 +207,99 @@ function startQuiz() {
   document.getElementById('dashboard-section').classList.remove('hidden');
 }
 
+function updateQuestion() {
+  if(currentIndex < currentQuiz.questions.length){
+    const q = currentQuiz.questions[currentIndex];
+    document.getElementById('question').textContent = `${currentIndex+1}. ${q.q}`;
+    document.getElementById('result-feedback').textContent = "";
+    document.getElementById('transcript').textContent = "";
+    document.getElementById('btnSpeak').disabled = false;
+    document.getElementById('btnSpeak').textContent = "🎤 Tap to Answer";
+  } else {
+    finishQuiz();
+  }
+  document.getElementById('score-display').textContent = `Score: ${score} / ${currentQuiz.questions.length}`;
+}
+
+if(recognition){
+  document.getElementById('btnSpeak').onclick = ()=>{
+    recognition.start();
+    document.getElementById('btnSpeak').disabled = true;
+    document.getElementById('btnSpeak').textContent = "Listening...";
+  };
+  recognition.onresult = (event)=>{
+    const userSpeech = event.results[0][0].transcript.toLowerCase();
+    const q = currentQuiz.questions[currentIndex];
+    document.getElementById('transcript').textContent = `Spoken: "${userSpeech}"`;
+    const isCorrect = q.keywords ? q.keywords.every(k=>userSpeech.includes(k.toLowerCase())) : userSpeech.includes(q.a.toLowerCase());
+    if(isCorrect){
+      document.getElementById('result-feedback').textContent="Correct! ✅";
+      document.getElementById('result-feedback').className="correct";
+      score++;
+    } else {
+      document.getElementById('result-feedback').textContent="Incorrect ❌";
+      document.getElementById('result-feedback').className="incorrect";
+    }
+    setTimeout(()=>{
+      currentIndex++;
+      updateQuestion();
+    },2000);
+  };
+  recognition.onerror = (event)=>{
+    const msg = event.error === 'not-allowed'
+      ? 'Microphone access denied. Please allow microphone permissions.'
+      : 'Speech recognition error. Check microphone permissions and try again.';
+
+    document.getElementById('result-feedback').textContent = msg;
+    document.getElementById('result-feedback').className = 'incorrect';
+    document.getElementById('btnSpeak').disabled = false;
+    document.getElementById('btnSpeak').textContent = "🎤 Try Again";
+  };
+}
+
 async function finishQuiz() {
   const studentID = document.getElementById('studentID').value;
-  const grade = document.getElementById('gradeLevel').value;
-  const section = document.getElementById('section').value;
+  const gs = `${document.getElementById('gradeLevel').value} - ${document.getElementById('section').value}`;
   const quizName = currentQuiz.name;
-  attempts++;
+  attempts++; // increment attempts
 
-  try {
+  try{
     await addDoc(collection(db,"Results"),{
-      studentID,
-      grade,
-      section,
-      quiz: quizName,
-      score,
-      attempts
+      studentID, gradeSection: gs, quiz: quizName, score, attempts
     });
   } catch(e){ console.error(e); }
 
-  currentQuiz = null; currentIndex = 0; score = 0;
+  allResults.push({ studentID, gs, quiz: quizName, score, attempts });
+  allResults.sort((a,b)=>b.score-a.score);
+
+  document.getElementById('quiz-section').classList.add('hidden');
+  document.getElementById('ranking-section').classList.remove('hidden');
+
+  const tbody=document.getElementById('rankingBody');
+  tbody.innerHTML="";
+  allResults.forEach((res,i)=>{
+    tbody.innerHTML+=`<tr><td>${i+1}</td><td>${res.studentID}</td><td>${res.gs}</td><td>${res.score} / ${currentQuiz.questions.length}</td></tr>`;
+  });
 }
 
-// Expose functions globally for onclick
-window.startQuiz = startQuiz;
+// Navigation
+function resetForNewUser(){ currentIndex=0; score=0; currentQuiz=null; attempts=0;
+  document.getElementById('studentID').value=""; document.getElementById('gradeLevel').value="";
+  document.getElementById('section').value=""; document.getElementById('ranking-section').classList.add('hidden');
+  document.getElementById('setup-section').classList.remove('hidden');
+}
+function showBooks(){ document.getElementById('dashboard-section').classList.add('hidden'); document.getElementById('books-section').classList.remove('hidden'); }
+function showQuizMenu(){ document.getElementById('dashboard-section').classList.add('hidden'); document.getElementById('quiz-menu-section').classList.remove('hidden'); }
+function attemptQuiz(i){ const password=prompt(`Enter password for ${quizzes[i].name}:`); if(password===quizzes[i].password){ currentQuiz=quizzes[i]; currentIndex=0; score=0; document.getElementById('quiz-menu-section').classList.add('hidden'); document.getElementById('quiz-section').classList.remove('hidden'); updateQuestion(); } else{ alert("Incorrect password"); } }
+function backToDashboardFromMenu(){ document.getElementById('quiz-menu-section').classList.add('hidden'); document.getElementById('dashboard-section').classList.remove('hidden'); }
+function backToDashboard(){ document.getElementById('books-section').classList.add('hidden'); document.getElementById('dashboard-section').classList.remove('hidden'); }
+function backToQuizMenu(){ document.getElementById('quiz-section').classList.add('hidden'); document.getElementById('quiz-menu-section').classList.remove('hidden'); }
+
+// expose global functions for onclick
+window.startQuiz=startQuiz; window.showBooks=showBooks; window.showQuizMenu=showQuizMenu;
+window.attemptQuiz=attemptQuiz; window.backToDashboardFromMenu=backToDashboardFromMenu;
+window.backToDashboard=backToDashboard; window.backToQuizMenu=backToQuizMenu; window.resetForNewUser=resetForNewUser;
+
 </script>
 </body>
 </html>
