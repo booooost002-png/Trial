@@ -337,7 +337,7 @@ function showBooks(){
         </label>
         <div class="book-info">
           <div class="book-title">${book.name}</div>
-          <a href="${book.link}" target="_blank" class="book-link">View PDF →</a>
+          <a href="${book.link}" target="_blank" class="book-link">View →</a>
         </div>
         <div class="completion-message ${isCompleted ? 'show' : ''}" id="msg_${book.name.replace(/\s+/g, '_')}">✓ Reading Completed</div>
       `;
@@ -357,7 +357,7 @@ function showBooks(){
         </label>
         <div class="book-info">
           <div class="book-title">${book.name}</div>
-          <a href="${book.link}" target="_blank" class="book-link">View PDF →</a>
+          <a href="${book.link}" target="_blank" class="book-link">View →</a>
         </div>
         <div class="completion-message" id="msg_${book.name.replace(/\s+/g, '_')}">✓ Reading Completed</div>
       `;
