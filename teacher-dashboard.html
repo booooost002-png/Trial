@@ -6,126 +6,125 @@
 <title>Literacy Assessment System</title>
 
 <style>
-  /* Keep your CSS as is */
-  :root {
-    --primary: #2563eb;
-    --success: #22c55e;
-    --danger: #ef4444;
-    --bg: #f8fafc;
-  }
-  body {
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial;
-    text-align: center;
-    padding: 20px;
-    background: var(--bg);
-    color: #1e293b;
-  }
-  #quiz-card {
-    background: white;
-    padding: 40px;
-    border-radius: 16px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, .1);
-    display: inline-block;
-    max-width: 800px;
-    width: 100%;
-  }
-  .login-container {
-    max-width: 400px;
-    margin: 0 auto;
-    text-align: left;
-  }
-  .input-group {
-    margin-bottom: 20px;
-  }
-  label {
-    font-weight: 600;
-    font-size: 14px;
-    display: block;
-    margin-bottom: 8px;
-  }
-  input {
-    width: 100%;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid #cbd5e1;
-    box-sizing: border-box;
-  }
-  .btn {
-    padding: 12px 24px;
-    font-size: 16px;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    border: none;
-    transition: .2s;
-  }
-  .btn-primary {
-    background: var(--primary);
-    color: white;
-  }
-  .btn-primary:hover {
-    background: #1d4ed8;
-  }
-  #teacher-login .btn-primary {
-    margin-top: 14px;
-    width: auto;
-    display: inline-block;
-    padding-left: 30px;
-    padding-right: 30px;
-  }
-  .hidden {
+:root {
+  --primary: #2563eb;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --bg: #f8fafc;
+}
+body {
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial;
+  text-align: center;
+  padding: 20px;
+  background: var(--bg);
+  color: #1e293b;
+}
+#quiz-card {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, .1);
+  display: inline-block;
+  max-width: 800px;
+  width: 100%;
+}
+.login-container {
+  max-width: 400px;
+  margin: 0 auto;
+  text-align: left;
+}
+.input-group {
+  margin-bottom: 20px;
+}
+label {
+  font-weight: 600;
+  font-size: 14px;
+  display: block;
+  margin-bottom: 8px;
+}
+input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  box-sizing: border-box;
+}
+.btn {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  transition: .2s;
+}
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+.btn-primary:hover {
+  background: #1d4ed8;
+}
+#teacher-login .btn-primary {
+  margin-top: 14px;
+  width: auto;
+  display: inline-block;
+  padding-left: 30px;
+  padding-right: 30px;
+}
+.hidden {
+  display: none;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+th, td {
+  border: 1px solid #e2e8f0;
+  padding: 12px;
+}
+th {
+  background: #f1f5f9;
+}
+.error {
+  color: var(--danger);
+  font-weight: 600;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+.reset-btn {
+  background: #f59e0b;
+  color: white;
+  padding: 6px 12px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  margin-bottom: 6px;
+  width: 100%;
+}
+.reset-btn:hover {
+  background: #d97706;
+}
+.delete-btn {
+  background: #ef4444;
+  color: white;
+  padding: 6px 12px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  width: 100%;
+}
+.delete-btn:hover {
+  background: #b91c1c;
+}
+@media print {
+  .no-print {
     display: none;
   }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-  }
-  th, td {
-    border: 1px solid #e2e8f0;
-    padding: 12px;
-  }
-  th {
-    background: #f1f5f9;
-  }
-  .error {
-    color: var(--danger);
-    font-weight: 600;
-    margin-top: 10px;
-    margin-bottom: 10px;
-  }
-  .reset-btn {
-    background: #f59e0b;
-    color: white;
-    padding: 6px 12px;
-    font-size: 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    border: none;
-    margin-bottom: 6px;
-    width: 100%;
-  }
-  .reset-btn:hover {
-    background: #d97706;
-  }
-  .delete-btn {
-    background: #ef4444;
-    color: white;
-    padding: 6px 12px;
-    font-size: 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    border: none;
-    width: 100%;
-  }
-  .delete-btn:hover {
-    background: #b91c1c;
-  }
-  @media print {
-    .no-print {
-      display: none;
-    }
-  }
+}
 </style>
 </head>
 
@@ -140,16 +139,16 @@
         <input type="text" id="teacherID" placeholder="Enter ID" />
       </div>
       <div id="loginError" class="error hidden" role="alert" aria-live="polite"></div>
-      <button class="btn btn-primary" onclick="teacherLogin()">Login</button>
+      <button id="loginBtn" class="btn btn-primary">Login</button>
     </div>
   </div>
 
   <div id="teacher-dashboard" class="hidden">
     <h2>Teacher Dashboard</h2>
     <div style="margin-bottom: 20px; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
-      <button class="btn" onclick="logoutTeacher()" style="background:#ef4444; color:white;">Logout</button>
-      <button class="btn" onclick="loadTeacher()" style="background:#10b981; color:white;">Refresh</button>
-      <button class="btn" onclick="window.print()" style="background:#64748b; color:white;">🖨 Print Results</button>
+      <button id="logoutBtn" class="btn" style="background:#ef4444; color:white;">Logout</button>
+      <button id="refreshBtn" class="btn" style="background:#10b981; color:white;">Refresh</button>
+      <button id="printBtn" class="btn" style="background:#64748b; color:white;">🖨 Print Results</button>
     </div>
 
     <table>
@@ -175,6 +174,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js";
   import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
 
+  // TODO: Replace these with your Firebase config
   const firebaseConfig = {
     apiKey: "YOUR_API_KEY",
     authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -216,58 +216,40 @@
   async function loadTeacher() {
     const body = document.getElementById("teacherTable");
     body.innerHTML = "";
-
     try {
       const querySnapshot = await getDocs(collection(db, "Results"));
       let allResults = [];
-
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
         allResults.push({
-          id: data.studentID || '-',
-          grade: data.grade || '-',
-          section: data.section || '-',
-          quiz: data.quiz || '-',
-          score: data.score || 0,
-          attempts: data.attempts || 0,
+          id: data.studentID,
+          grade: data.grade,
+          section: data.section,
+          quiz: data.quiz,
+          score: data.score,
+          attempts: data.attempts,
           docId: docSnap.id
         });
       });
 
+      // Sort by score descending
       allResults.sort((a, b) => b.score - a.score);
 
-      allResults.forEach(r => {
-        const tr = document.createElement("tr");
-
-        tr.innerHTML = `
-          <td>${r.id}</td>
-          <td>${r.grade}</td>
-          <td>${r.section}</td>
-          <td>${r.quiz}</td>
-          <td>${r.score}</td>
-          <td>${r.attempts}</td>
-          <td></td>
+      allResults.forEach((r) => {
+        body.innerHTML += `
+          <tr>
+            <td>${r.id}</td>
+            <td>${r.grade}</td>
+            <td>${r.section}</td>
+            <td>${r.quiz}</td>
+            <td>${r.score}</td>
+            <td>${r.attempts}</td>
+            <td>
+              <button class="reset-btn" onclick="resetAttempt('${r.docId}')">Reset Attempt</button>
+              <button class="delete-btn" onclick="deleteAttempt('${r.docId}')">Delete</button>
+            </td>
+          </tr>
         `;
-
-        const actionTd = tr.querySelector("td:last-child");
-
-        // Create Reset Attempt button
-        const resetBtn = document.createElement("button");
-        resetBtn.textContent = "Reset Attempt";
-        resetBtn.className = "reset-btn";
-        resetBtn.addEventListener("click", () => resetAttempt(r.docId));
-
-        // Create Delete button
-        const deleteBtn = document.createElement("button");
-        deleteBtn.textContent = "Delete";
-        deleteBtn.className = "delete-btn";
-        deleteBtn.addEventListener("click", () => deleteAttempt(r.docId));
-
-        // Append buttons to the action cell
-        actionTd.appendChild(resetBtn);
-        actionTd.appendChild(deleteBtn);
-
-        body.appendChild(tr);
       });
     } catch (e) {
       console.error("Error fetching data: ", e);
@@ -291,6 +273,12 @@
       await loadTeacher();
     }
   }
+
+  // Add event listeners for buttons after defining all functions
+  document.getElementById('loginBtn').addEventListener('click', teacherLogin);
+  document.getElementById('logoutBtn').addEventListener('click', logoutTeacher);
+  document.getElementById('refreshBtn').addEventListener('click', loadTeacher);
+  document.getElementById('printBtn').addEventListener('click', () => window.print());
 </script>
 </body>
 </html>
