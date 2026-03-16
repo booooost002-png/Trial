@@ -140,7 +140,7 @@ th { background-color: #f1f5f9; color: #475569; font-weight: 700; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js";
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
 
 // 🔹 Replace with your Firebase configuration
 const firebaseConfig = {
@@ -174,7 +174,6 @@ const quizzes = [
 let currentQuiz = null;
 let currentIndex = 0;
 let score = 0;
-let attempts = 0;  // track attempts
 let allResults = [];
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -186,7 +185,7 @@ function startQuiz() {
   const studentID = document.getElementById('studentID').value.trim();
   const grade = document.getElementById('gradeLevel').value.trim();
   const section = document.getElementById('section').value.trim();
-  const validIDs = ['001','002','003'];
+  const validIDs = Array.from({length: 60}, (_, i) => (i + 1).toString().padStart(3, '0'));
   const studentError = document.getElementById('studentIdError');
   studentError.classList.add('hidden');
 
@@ -261,15 +260,26 @@ async function finishQuiz() {
   const studentID = document.getElementById('studentID').value;
   const gs = `${document.getElementById('gradeLevel').value} - ${document.getElementById('section').value}`;
   const quizName = currentQuiz.name;
-  attempts++; // increment attempts
+  const docId = `${studentID}_${quizName}`;
+  const docRef = doc(db, "Results", docId);
 
-  try{
-    await addDoc(collection(db,"Results"),{
-      studentID, gradeSection: gs, quiz: quizName, score, attempts
+  let newAttempts = 1; // Initialize attempts
+
+  try {
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      newAttempts = docSnap.data().attempts + 1;
+    }
+    await setDoc(docRef, {
+      studentID, gradeSection: gs, quiz: quizName, score, attempts: newAttempts
     });
-  } catch(e){ console.error(e); }
+  } catch(e){ 
+    console.error("Error saving result:", e); 
+    alert("Error saving result. Please try again.");
+    return;
+  }
 
-  allResults.push({ studentID, gs, quiz: quizName, score, attempts });
+  allResults.push({ studentID, gs, quiz: quizName, score, attempts: newAttempts });
   allResults.sort((a,b)=>b.score-a.score);
 
   document.getElementById('quiz-section').classList.add('hidden');
@@ -283,14 +293,43 @@ async function finishQuiz() {
 }
 
 // Navigation
-function resetForNewUser(){ currentIndex=0; score=0; currentQuiz=null; attempts=0;
+function resetForNewUser(){ currentIndex=0; score=0; currentQuiz=null;
   document.getElementById('studentID').value=""; document.getElementById('gradeLevel').value="";
   document.getElementById('section').value=""; document.getElementById('ranking-section').classList.add('hidden');
   document.getElementById('setup-section').classList.remove('hidden');
 }
 function showBooks(){ document.getElementById('dashboard-section').classList.add('hidden'); document.getElementById('books-section').classList.remove('hidden'); }
 function showQuizMenu(){ document.getElementById('dashboard-section').classList.add('hidden'); document.getElementById('quiz-menu-section').classList.remove('hidden'); }
-function attemptQuiz(i){ const password=prompt(`Enter password for ${quizzes[i].name}:`); if(password===quizzes[i].password){ currentQuiz=quizzes[i]; currentIndex=0; score=0; document.getElementById('quiz-menu-section').classList.add('hidden'); document.getElementById('quiz-section').classList.remove('hidden'); updateQuestion(); } else{ alert("Incorrect password"); } }
+function attemptQuiz(i){ 
+  const password = prompt(`Enter password for ${quizzes[i].name}:`); 
+  if(password === quizzes[i].password){ 
+    const studentID = document.getElementById('studentID').value;
+    const quizName = quizzes[i].name;
+    const docId = `${studentID}_${quizName}`;
+    const docRef = doc(db, "Results", docId);
+    getDoc(docRef).then(docSnap => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.attempts >= 2) {
+          alert("You have already attempted this quiz 2 times. Contact your teacher to reset attempts.");
+          return;
+        }
+      }
+      // Proceed to start quiz
+      currentQuiz = quizzes[i]; 
+      currentIndex = 0; 
+      score = 0; 
+      document.getElementById('quiz-menu-section').classList.add('hidden'); 
+      document.getElementById('quiz-section').classList.remove('hidden'); 
+      updateQuestion();
+    }).catch(err => {
+      console.error("Error checking attempts:", err);
+      alert("Error checking attempts. Please try again.");
+    });
+  } else { 
+    alert("Incorrect password"); 
+  } 
+}
 function backToDashboardFromMenu(){ document.getElementById('quiz-menu-section').classList.add('hidden'); document.getElementById('dashboard-section').classList.remove('hidden'); }
 function backToDashboard(){ document.getElementById('books-section').classList.add('hidden'); document.getElementById('dashboard-section').classList.remove('hidden'); }
 function backToQuizMenu(){ document.getElementById('quiz-section').classList.add('hidden'); document.getElementById('quiz-menu-section').classList.remove('hidden'); }
