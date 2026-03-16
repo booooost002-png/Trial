@@ -31,6 +31,18 @@ table { width: 100%; border-collapse: collapse; background: white; }
 th, td { border: 1px solid #e2e8f0; padding: 15px; text-align: left; }
 th { background-color: #f1f5f9; color: #475569; font-weight: 700; }
 .hidden { display: none; }
+.toggle-switch { position: relative; display: inline-block; width: 50px; height: 24px; margin-right: 12px; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 24px; }
+.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--success); }
+input:checked + .slider:before { transform: translateX(26px); }
+.book-item { display: flex; align-items: center; padding: 12px; border: 1px solid #e2e8f0; margin-bottom: 10px; border-radius: 8px; background: white; }
+.book-info { flex: 1; text-align: left; }
+.book-title { color: var(--primary); font-weight: 600; font-size: 16px; }
+.book-link { font-size: 12px; color: #64748b; text-decoration: none; }
+.completion-message { display: none; color: var(--success); font-weight: 600; margin-left: 12px; font-size: 14px; }
+.completion-message.show { display: block; }
 @media print { .no-print { display: none; } #quiz-card { box-shadow: none; border: 1px solid #000; } }
 </style>
 </head>
@@ -121,16 +133,11 @@ th { background-color: #f1f5f9; color: #475569; font-weight: 700; }
   <!-- Books -->
   <div id="books-section" class="hidden">
     <h2>📚 Available Books</h2>
-    <p>Click on a book to download or view the PDF.</p>
-    <div style="text-align: left; max-width: 600px; margin: 0 auto;">
-      <ul style="list-style: none; padding: 0;">
-        <li style="margin-bottom: 15px;">
-          <a href="https://example.com/book1.pdf" target="_blank" style="text-decoration: none; color: var(--primary); font-weight: 600;">The Great Gatsby</a>
-        </li>
-        <li style="margin-bottom: 15px;">
-          <a href="https://example.com/book2.pdf" target="_blank" style="text-decoration: none; color: var(--primary); font-weight: 600;">To Kill a Mockingbird</a>
-        </li>
-      </ul>
+    <p>Slide the toggle to the right to mark a book as completed after reading.</p>
+    <div style="text-align: left; max-width: 700px; margin: 0 auto;">
+      <div id="booksList" style="display: flex; flex-direction: column;">
+        <!-- Books will be populated here -->
+      </div>
     </div>
     <div style="margin-top: 30px;" class="no-print">
       <button class="btn btn-primary" onclick="backToDashboard()">Back to Dashboard</button>
@@ -169,6 +176,12 @@ const quizzes = [
       {q:"Who wrote Romeo and Juliet?", a:"Shakespeare", keywords:["shakespeare"]},
       {q:"What is the largest planet?", a:"Jupiter", keywords:["jupiter"]}
   ] }
+];
+
+// Books
+const books = [
+  { name: "The Philippines", link: "https://www.canva.com/design/DAHEHofMGvg/xosAM81Ef-lzUNR2nNnOWw/view" },
+  { name: "History of Literature", link: "https://www.canva.com/design/DAHEHsvgjn0/5KyQrJwe0sOvKXSw0ixEmg/view" }
 ];
 
 let currentQuiz = null;
@@ -298,45 +311,149 @@ function resetForNewUser(){ currentIndex=0; score=0; currentQuiz=null;
   document.getElementById('section').value=""; document.getElementById('ranking-section').classList.add('hidden');
   document.getElementById('setup-section').classList.remove('hidden');
 }
-function showBooks(){ document.getElementById('dashboard-section').classList.add('hidden'); document.getElementById('books-section').classList.remove('hidden'); }
+function showBooks(){
+  const container = document.getElementById('booksList');
+  container.innerHTML = '';
+  
+  // Load completion statuses first, then render with correct states
+  const studentID = document.getElementById('studentID').value;
+  const completionPromises = books.map(book => {
+    const docId = `${studentID}_${book.name}`;
+    const docRef = doc(db, "BookCompletions", docId);
+    return getDoc(docRef);
+  });
+  
+  Promise.all(completionPromises).then(docSnapshots => {
+    books.forEach((book, index) => {
+      const bookItem = document.createElement('div');
+      bookItem.className = 'book-item';
+      const bookId = `toggle_${book.name.replace(/\s+/g, '_')}`;
+      const isCompleted = docSnapshots[index].exists() && docSnapshots[index].data().completed;
+      
+      bookItem.innerHTML = `
+        <label class="toggle-switch">
+          <input type="checkbox" id="${bookId}" onchange="markCompleted('${book.name}', event)" ${isCompleted ? 'checked' : ''}>
+          <span class="slider"></span>
+        </label>
+        <div class="book-info">
+          <div class="book-title">${book.name}</div>
+          <a href="${book.link}" target="_blank" class="book-link">View PDF →</a>
+        </div>
+        <div class="completion-message ${isCompleted ? 'show' : ''}" id="msg_${book.name.replace(/\s+/g, '_')}">✓ Reading Completed</div>
+      `;
+      container.appendChild(bookItem);
+    });
+  }).catch(err => {
+    console.error("Error loading book statuses:", err);
+    // Render books anyway even if there's an error loading statuses
+    books.forEach(book => {
+      const bookItem = document.createElement('div');
+      bookItem.className = 'book-item';
+      const bookId = `toggle_${book.name.replace(/\s+/g, '_')}`;
+      bookItem.innerHTML = `
+        <label class="toggle-switch">
+          <input type="checkbox" id="${bookId}" onchange="markCompleted('${book.name}', event)">
+          <span class="slider"></span>
+        </label>
+        <div class="book-info">
+          <div class="book-title">${book.name}</div>
+          <a href="${book.link}" target="_blank" class="book-link">View PDF →</a>
+        </div>
+        <div class="completion-message" id="msg_${book.name.replace(/\s+/g, '_')}">✓ Reading Completed</div>
+      `;
+      container.appendChild(bookItem);
+    });
+  });
+  
+  document.getElementById('dashboard-section').classList.add('hidden');
+  document.getElementById('books-section').classList.remove('hidden');
+}
 function showQuizMenu(){ document.getElementById('dashboard-section').classList.add('hidden'); document.getElementById('quiz-menu-section').classList.remove('hidden'); }
 function attemptQuiz(i){ 
   const password = prompt(`Enter password for ${quizzes[i].name}:`); 
   if(password === quizzes[i].password){ 
     const studentID = document.getElementById('studentID').value;
     const quizName = quizzes[i].name;
-    const docId = `${studentID}_${quizName}`;
-    const docRef = doc(db, "Results", docId);
-    getDoc(docRef).then(docSnap => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data.attempts >= 2) {
-          alert("You have already attempted this quiz 2 times. Contact your teacher to reset attempts.");
+    // Check prerequisites
+    if (i === 0) { // Quiz 1 requires "The Philippines" book completed
+      const requiredBook = "The Philippines";
+      const docId = `${studentID}_${requiredBook}`;
+      const docRef = doc(db, "BookCompletions", docId);
+      getDoc(docRef).then(docSnap => {
+        if (!docSnap.exists() || !docSnap.data().completed) {
+          alert(`Please complete the book "${requiredBook}" before taking ${quizName}.`);
           return;
         }
-      }
-      // Proceed to start quiz
-      currentQuiz = quizzes[i]; 
-      currentIndex = 0; 
-      score = 0; 
-      document.getElementById('quiz-menu-section').classList.add('hidden'); 
-      document.getElementById('quiz-section').classList.remove('hidden'); 
-      updateQuestion();
-    }).catch(err => {
-      console.error("Error checking attempts:", err);
-      alert("Error checking attempts. Please try again.");
-    });
+        // Proceed to start quiz
+        startQuizAttempt(i);
+      }).catch(err => {
+        console.error("Error checking book completion:", err);
+        alert("Error checking prerequisites. Please try again.");
+      });
+    } else {
+      startQuizAttempt(i);
+    }
   } else { 
     alert("Incorrect password"); 
   } 
+}
+
+function startQuizAttempt(i) {
+  const studentID = document.getElementById('studentID').value;
+  const quizName = quizzes[i].name;
+  const docId = `${studentID}_${quizName}`;
+  const docRef = doc(db, "Results", docId);
+  getDoc(docRef).then(docSnap => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data.attempts >= 2) {
+        alert("You have already attempted this quiz 2 times. Contact your teacher to reset attempts.");
+        return;
+      }
+    }
+    // Proceed to start quiz
+    currentQuiz = quizzes[i]; 
+    currentIndex = 0; 
+    score = 0; 
+    document.getElementById('quiz-menu-section').classList.add('hidden'); 
+    document.getElementById('quiz-section').classList.remove('hidden'); 
+    updateQuestion();
+  }).catch(err => {
+    console.error("Error checking attempts:", err);
+    alert("Error checking attempts. Please try again.");
+  });
 }
 function backToDashboardFromMenu(){ document.getElementById('quiz-menu-section').classList.add('hidden'); document.getElementById('dashboard-section').classList.remove('hidden'); }
 function backToDashboard(){ document.getElementById('books-section').classList.add('hidden'); document.getElementById('dashboard-section').classList.remove('hidden'); }
 function backToQuizMenu(){ document.getElementById('quiz-section').classList.add('hidden'); document.getElementById('quiz-menu-section').classList.remove('hidden'); }
 
+async function markCompleted(bookName, event) {
+  const studentID = document.getElementById('studentID').value;
+  const docId = `${studentID}_${bookName}`;
+  const docRef = doc(db, "BookCompletions", docId);
+  const isChecked = event.target.checked;
+  const messageId = `msg_${bookName.replace(/\s+/g, '_')}`;
+  
+  try {
+    if (isChecked) {
+      await setDoc(docRef, { studentID, bookName, completed: true });
+      document.getElementById(messageId).classList.add('show');
+    } else {
+      // Allow unchecking
+      await setDoc(docRef, { studentID, bookName, completed: false });
+      document.getElementById(messageId).classList.remove('show');
+    }
+  } catch (e) {
+    console.error("Error marking book as completed:", e);
+    event.target.checked = !isChecked;
+    alert("Error saving completion. Please try again.");
+  }
+}
+
 // expose global functions for onclick
 window.startQuiz=startQuiz; window.showBooks=showBooks; window.showQuizMenu=showQuizMenu;
 window.attemptQuiz=attemptQuiz; window.backToDashboardFromMenu=backToDashboardFromMenu;
+window.markCompleted=markCompleted;
 window.backToDashboard=backToDashboard; window.backToQuizMenu=backToQuizMenu; window.resetForNewUser=resetForNewUser;
 
 </script>
