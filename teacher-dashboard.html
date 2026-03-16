@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Literacy Assessment System</title>
+<title>Literacy Assessment System - Teacher Dashboard</title>
 
 <style>
 :root {
@@ -25,7 +25,7 @@ body {
   border-radius: 16px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, .1);
   display: inline-block;
-  max-width: 800px;
+  max-width: 900px;
   width: 100%;
 }
 .login-container {
@@ -65,13 +65,6 @@ input {
 .btn-primary:hover {
   background: #1d4ed8;
 }
-#teacher-login .btn-primary {
-  margin-top: 14px;
-  width: auto;
-  display: inline-block;
-  padding-left: 30px;
-  padding-right: 30px;
-}
 .hidden {
   display: none;
 }
@@ -91,38 +84,29 @@ th {
   color: var(--danger);
   font-weight: 600;
   margin-top: 10px;
-  margin-bottom: 10px;
 }
 .reset-btn {
   background: #f59e0b;
   color: white;
   padding: 6px 12px;
-  font-size: 14px;
+  font-size: 12px;
   border-radius: 6px;
   cursor: pointer;
   border: none;
-  margin-bottom: 6px;
-  width: 100%;
-}
-.reset-btn:hover {
-  background: #d97706;
+  margin-right: 5px;
 }
 .delete-btn {
   background: #ef4444;
   color: white;
   padding: 6px 12px;
-  font-size: 14px;
+  font-size: 12px;
   border-radius: 6px;
   cursor: pointer;
   border: none;
-  width: 100%;
-}
-.delete-btn:hover {
-  background: #b91c1c;
 }
 @media print {
-  .no-print {
-    display: none;
+  .no-print, .btn, .reset-btn, .delete-btn {
+    display: none !important;
   }
 }
 </style>
@@ -138,16 +122,16 @@ th {
         <label>Teacher ID</label>
         <input type="text" id="teacherID" placeholder="Enter ID" />
       </div>
-      <div id="loginError" class="error hidden" role="alert" aria-live="polite"></div>
+      <div id="loginError" class="error hidden"></div>
       <button id="loginBtn" class="btn btn-primary">Login</button>
     </div>
   </div>
 
   <div id="teacher-dashboard" class="hidden">
     <h2>Teacher Dashboard</h2>
-    <div style="margin-bottom: 20px; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+    <div class="no-print" style="margin-bottom: 20px; display: flex; justify-content: flex-end; gap: 10px;">
       <button id="logoutBtn" class="btn" style="background:#ef4444; color:white;">Logout</button>
-      <button id="refreshBtn" class="btn" style="background:#10b981; color:white;">Refresh</button>
+      <button id="refreshBtn" class="btn" style="background:#10b981; color:white;">Refresh Data</button>
       <button id="printBtn" class="btn" style="background:#64748b; color:white;">🖨 Print Results</button>
     </div>
 
@@ -160,21 +144,21 @@ th {
           <th>Quiz</th>
           <th>Score</th>
           <th>Attempts</th>
-          <th>Actions</th>
+          <th class="no-print">Actions</th>
         </tr>
       </thead>
-      <tbody id="teacherTable"></tbody>
+      <tbody id="teacherTable">
+        </tbody>
     </table>
   </div>
 
 </div>
 
-<!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js";
   import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-firestore.js";
 
-  // TODO: Replace these with your Firebase config
+  // TODO: PASTE YOUR ACTUAL FIREBASE CONFIG HERE
   const firebaseConfig = {
     apiKey: "YOUR_API_KEY",
     authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -193,10 +177,9 @@ th {
     const id = document.getElementById("teacherID").value.trim();
     const errorEl = document.getElementById("loginError");
     errorEl.classList.add("hidden");
-    errorEl.textContent = "";
 
     if (!validTeachers.includes(id)) {
-      errorEl.textContent = "Invalid Teacher ID. Please try again.";
+      errorEl.textContent = "Invalid Teacher ID.";
       errorEl.classList.remove("hidden");
       return;
     }
@@ -206,86 +189,100 @@ th {
     await loadTeacher();
   }
 
-  function logoutTeacher() {
-    document.getElementById("teacher-dashboard").classList.add("hidden");
-    document.getElementById("teacher-login").classList.remove("hidden");
-    document.getElementById("teacherID").value = "";
-    document.getElementById("loginError").classList.add("hidden");
-  }
-
   async function loadTeacher() {
     const body = document.getElementById("teacherTable");
-    body.innerHTML = "";
+    body.innerHTML = "<tr><td colspan='7'>Loading results...</td></tr>";
+    
     try {
       const querySnapshot = await getDocs(collection(db, "Results"));
       let allResults = [];
+      
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
+        
+        // SMART MAPPING: This checks for multiple ways the data might be named
         allResults.push({
-          id: data.studentID,
-          grade: data.grade,
-          section: data.section,
-          quiz: data.quiz,
-          score: data.score,
-          attempts: data.attempts,
+          id: data.studentID || data.studentId || data.id || "N/A",
+          grade: data.grade || data.Grade || "N/A",
+          section: data.section || data.Section || "N/A",
+          quiz: data.quiz || "N/A",
+          score: (data.score !== undefined) ? data.score : 0,
+          attempts: (data.attempts !== undefined) ? data.attempts : 0,
           docId: docSnap.id
         });
       });
 
-      // Sort by score descending
+      // Sort by score highest to lowest
       allResults.sort((a, b) => b.score - a.score);
 
+      body.innerHTML = ""; // Clear loading message
+
+      if (allResults.length === 0) {
+        body.innerHTML = "<tr><td colspan='7'>No results found in database.</td></tr>";
+        return;
+      }
+
       allResults.forEach((r) => {
-        body.innerHTML += `
-          <tr>
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
             <td>${r.id}</td>
             <td>${r.grade}</td>
             <td>${r.section}</td>
             <td>${r.quiz}</td>
             <td>${r.score}</td>
             <td>${r.attempts}</td>
-            <td>
-              <button class="reset-btn" onclick="resetAttempt('${r.docId}')">Reset Attempt</button>
-              <button class="delete-btn" onclick="deleteAttempt('${r.docId}')">Delete</button>
+            <td class="no-print">
+              <button class="reset-btn">Reset</button>
+              <button class="delete-btn">Delete</button>
             </td>
-          </tr>
         `;
+
+        // Attach actions to buttons
+        tr.querySelector(".reset-btn").onclick = () => resetAttempt(r.docId);
+        tr.querySelector(".delete-btn").onclick = () => deleteAttempt(r.docId);
+        
+        body.appendChild(tr);
       });
     } catch (e) {
       console.error("Error fetching data: ", e);
+      body.innerHTML = `<tr><td colspan='7' style="color:red">Error: ${e.message}</td></tr>`;
     }
   }
 
   async function resetAttempt(docId) {
-    if (confirm("Reset this student's attempt?")) {
-      const docRef = doc(db, "Results", docId);
-      await updateDoc(docRef, { attempts: 0 });
-      alert("Attempt reset successfully!");
-      await loadTeacher();
+    if (confirm("Reset this student's attempt count to 0?")) {
+      try {
+        const docRef = doc(db, "Results", docId);
+        await updateDoc(docRef, { attempts: 0 });
+        alert("Attempt reset!");
+        await loadTeacher();
+      } catch (err) { alert("Error: " + err.message); }
     }
   }
 
   async function deleteAttempt(docId) {
-    if (confirm("Are you sure you want to delete this record? This action cannot be undone.")) {
-      const docRef = doc(db, "Results", docId);
-      await deleteDoc(docRef);
-      alert("Record deleted successfully!");
-      await loadTeacher();
+    if (confirm("Permanently delete this record?")) {
+      try {
+        const docRef = doc(db, "Results", docId);
+        await deleteDoc(docRef);
+        alert("Record deleted!");
+        await loadTeacher();
+      } catch (err) { alert("Error: " + err.message); }
     }
   }
 
-  // Expose functions to global scope for onclick attributes
-  window.teacherLogin = teacherLogin;
-  window.logoutTeacher = logoutTeacher;
-  window.loadTeacher = loadTeacher;
-  window.resetAttempt = resetAttempt;
-  window.deleteAttempt = deleteAttempt;
+  function logoutTeacher() {
+    document.getElementById("teacher-dashboard").classList.add("hidden");
+    document.getElementById("teacher-login").classList.remove("hidden");
+    document.getElementById("teacherID").value = "";
+  }
 
-  // Add event listeners for buttons after defining all functions
-  document.getElementById('loginBtn').addEventListener('click', teacherLogin);
-  document.getElementById('logoutBtn').addEventListener('click', logoutTeacher);
-  document.getElementById('refreshBtn').addEventListener('click', loadTeacher);
-  document.getElementById('printBtn').addEventListener('click', () => window.print());
+  // Event Listeners
+  document.getElementById('loginBtn').onclick = teacherLogin;
+  document.getElementById('logoutBtn').onclick = logoutTeacher;
+  document.getElementById('refreshBtn').onclick = loadTeacher;
+  document.getElementById('printBtn').onclick = () => window.print();
+
 </script>
 </body>
 </html>
