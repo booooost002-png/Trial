@@ -139,8 +139,7 @@ th {
       <thead>
         <tr>
           <th>Student ID</th>
-          <th>Grade</th>
-          <th>Section</th>
+          <th>Class</th>
           <th>Quiz</th>
           <th>Score</th>
           <th>Attempts</th>
@@ -191,7 +190,7 @@ th {
 
   async function loadTeacher() {
     const body = document.getElementById("teacherTable");
-    body.innerHTML = "<tr><td colspan='7'>Loading results...</td></tr>";
+    body.innerHTML = "<tr><td colspan='6'>Loading results...</td></tr>";
     
     try {
       const querySnapshot = await getDocs(collection(db, "Results"));
@@ -203,8 +202,7 @@ th {
         // SMART MAPPING: This checks for multiple ways the data might be named
         allResults.push({
           id: data.studentID || data.studentId || data.id || "N/A",
-          grade: data.grade || data.Grade || "N/A",
-          section: data.section || data.Section || "N/A",
+          gradeSection: data.gradeSection || `${data.grade || "N/A"} - ${data.section || "N/A"}`,
           quiz: data.quiz || "N/A",
           score: (data.score !== undefined) ? data.score : 0,
           attempts: (data.attempts !== undefined) ? data.attempts : 0,
@@ -218,7 +216,7 @@ th {
       body.innerHTML = ""; // Clear loading message
 
       if (allResults.length === 0) {
-        body.innerHTML = "<tr><td colspan='7'>No results found in database.</td></tr>";
+        body.innerHTML = "<tr><td colspan='6'>No results found in database.</td></tr>";
         return;
       }
 
@@ -226,8 +224,7 @@ th {
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${r.id}</td>
-            <td>${r.grade}</td>
-            <td>${r.section}</td>
+            <td>${r.gradeSection}</td>
             <td>${r.quiz}</td>
             <td>${r.score}</td>
             <td>${r.attempts}</td>
@@ -245,7 +242,7 @@ th {
       });
     } catch (e) {
       console.error("Error fetching data: ", e);
-      body.innerHTML = `<tr><td colspan='7' style="color:red">Error: ${e.message}</td></tr>`;
+      body.innerHTML = `<tr><td colspan='6' style="color:red">Error: ${e.message}</td></tr>`;
     }
   }
 
